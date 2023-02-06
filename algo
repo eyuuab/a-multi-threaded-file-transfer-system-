@@ -1,0 +1,39 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <thread>
+
+const int NUM_THREADS = 8;
+
+void transferChunk(std::ifstream &infile, std::ofstream &outfile, int chunkSize) {
+  char buffer[chunkSize];
+  infile.read(buffer, chunkSize);
+  outfile.write(buffer, infile.gcount());
+}
+
+int main(int argc, char *argv[]) {
+  if (argc != 3) {
+    std::cout << "Usage: file_transfer <input_file> <output_file>" << std::endl;
+    return 1;
+  }
+
+  std::ifstream infile(argv[1], std::ios::binary);
+  std::ofstream outfile(argv[2], std::ios::binary);
+  int chunkSize = infile.tellg() / NUM_THREADS;
+  std::vector<std::thread> threads;
+
+  for (int i = 0; i < NUM_THREADS; i++) {
+    threads.push_back(std::thread(transferChunk, std::ref(infile), std::ref(outfile), chunkSize));
+  }
+
+  for (auto &t : threads) {
+    t.join();
+  }
+
+  infile.close();
+  outfile.close();
+
+  std::cout << "File transfer complete." << std::endl;
+
+  return 0;
+}
